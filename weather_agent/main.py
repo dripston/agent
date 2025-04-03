@@ -9,6 +9,7 @@ from weather_agent.training.model_trainer import WeatherModelTrainer
 from weather_agent.validation.validator import WeatherValidator
 
 app = FastAPI(title="Weather Prediction AI Agent")
+weather_predictor = WeatherPredictor()  # Add this line to create the instance
 
 class WeatherRequest(BaseModel):
     location: str
@@ -20,25 +21,11 @@ class WeatherResponse(BaseModel):
     forecast: dict
     confidence: dict
 
-weather_predictor = WeatherPredictor()
-
 @app.post("/train")
 async def train_models():
     try:
-        # Initialize components
-        fetcher = OpenMeteoFetcher()
-        trainer = WeatherModelTrainer()
-        
-        # Fetch training data (last 2 years)
-        end_date = datetime.now().strftime("%Y-%m-%d")
-        start_date = (datetime.now() - timedelta(days=730)).strftime("%Y-%m-%d")
-        
-        # Mumbai coordinates (example)
-        data = fetcher.fetch_historical_data(19.0760, 72.8777, start_date, end_date)
-        
-        # Train models
-        trainer.train(data)
-        
+        # Use the weather_predictor instance we created
+        weather_predictor.train(19.0760, 72.8777)  # Mumbai coordinates
         return {"message": "Models trained successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
