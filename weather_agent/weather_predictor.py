@@ -194,3 +194,38 @@ class WeatherPredictor:
     def _calculate_pressure_tendency(self, pressure):
         # Calculate 3-hour pressure change
         return pressure.diff(periods=3)
+
+    def predict_micro_location(self, city: str, area: str, target_date: str) -> dict:
+        location_data = self.micro_location_mapper.get_coordinates(city, area)
+        
+        # Get hourly predictions for the next 24 hours
+        hourly_predictions = {}
+        for hour in range(24):
+            features = self._prepare_micro_features(location_data, hour)
+            predictions = self._get_hourly_prediction(features)
+            
+            if predictions['precipitation'] > 0.2:  # Significant rain threshold
+                hourly_predictions[hour] = {
+                    "rain_probability": f"{predictions['precipitation'] * 100:.1f}%",
+                    "intensity": self._get_rain_intensity(predictions['precipitation']),
+                    "duration": self._estimate_duration(hour, predictions),
+                    "specific_location": self._get_specific_location(location_data, predictions)
+                }
+        
+        return self._format_micro_prediction(hourly_predictions)
+
+    def _get_specific_location(self, location_data, predictions):
+        # Use terrain data and wind patterns to predict exact rain location
+        base_lat, base_lon = location_data['lat'], location_data['lon']
+        wind_direction = predictions['wind_direction']
+        wind_speed = predictions['wind_speed']
+        
+        # Calculate affected area radius based on precipitation intensity
+        affected_radius = self._calculate_affected_radius(predictions['precipitation'])
+        
+        return {
+            "center": {"lat": base_lat, "lon": base_lon},
+            "radius": affected_radius,
+            "direction": wind_direction,
+            "landmarks": self._get_nearby_landmarks(base_lat, base_lon)
+        }

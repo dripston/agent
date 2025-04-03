@@ -50,5 +50,24 @@ async def predict_weather(request: WeatherRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@app.post("/predict_micro_weather")
+async def predict_micro_weather(request: MicroWeatherRequest):
+    try:
+        forecast = weather_predictor.predict_micro_location(
+            request.city,
+            request.area,
+            request.date
+        )
+        
+        return MicroWeatherResponse(
+            city=request.city,
+            area=request.area,
+            date=request.date,
+            hourly_forecast=forecast,
+            confidence=calculate_micro_confidence(forecast)
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
